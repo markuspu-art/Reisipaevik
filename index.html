@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Reisipäevik">
+<meta name="theme-color" content="#2d4a3e">
+<title>Reisipäevik</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1a18;
+  --cream: #f5f0e8;
+  --sand: #e8dfc8;
+  --sand2: #d4c9b0;
+  --forest: #2d4a3e;
+  --forest2: #1e3329;
+  --moss: #4a7c5f;
+  --gold: #c9963a;
+  --gold2: #a87a2a;
+  --muted: #8a8278;
+  --card: #fffdf8;
+  --danger: #c0392b;
+  --r: 16px;
+  --safe-top: env(safe-area-inset-top, 44px);
+  --safe-bot: env(safe-area-inset-bottom, 20px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--forest2);color:var(--ink);}
+
+/* ── APP SHELL ── */
+#app{height:100%;display:flex;flex-direction:column;max-width:430px;margin:0 auto;background:var(--cream);position:relative;overflow:hidden;}
+
+/* ── SCREENS ── */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--cream);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;will-change:transform;}
+.screen.hidden{transform:translateX(100%);pointer-events:none;}
+.screen.slide-left{transform:translateX(-30%);opacity:.5;pointer-events:none;}
+
+/* ── SCROLLABLE CONTENT ── */
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--forest);padding:calc(var(--safe-top) + 8px) 20px 18px;flex-shrink:0;position:relative;}
+.topbar-title{font-family:'DM Serif Display',serif;font-size:26px;color:#fff;}
+.topbar-sub{font-size:12px;color:#9fb8aa;margin-top:3px;font-weight:300;}
+.topbar-actions{position:absolute;right:16px;bottom:16px;display:flex;gap:10px;}
+
+.nav-bar{background:var(--forest);padding:10px 20px calc(10px + var(--safe-bot));display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.nav-back{color:#9fb8aa;font-size:13px;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0;}
+.nav-title{font-family:'DM Serif Display',serif;font-size:20px;color:#fff;flex:1;}
+.nav-btn{background:var(--gold);color:#fff;border:none;border-radius:20px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;}
+
+/* ── TRIP LIST ── */
+.trip-list{padding:14px 14px calc(80px + var(--safe-bot));display:flex;flex-direction:column;gap:12px;}
+.trip-card{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.08);cursor:pointer;active:transform:scale(.98);}
+.trip-thumb{height:150px;width:100%;position:relative;background:var(--forest);overflow:hidden;}
+.trip-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.trip-thumb-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.65) 0%,transparent 55%);}
+.trip-thumb-label{position:absolute;bottom:12px;left:14px;right:14px;color:#fff;}
+.trip-thumb-label h3{font-family:'DM Serif Display',serif;font-size:19px;line-height:1.2;}
+.trip-name-tag{font-size:10px;opacity:.75;margin-top:2px;font-weight:300;letter-spacing:.04em;text-transform:uppercase;}
+.trip-meta{padding:10px 14px 12px;display:flex;flex-direction:column;gap:5px;}
+.trip-dates{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--forest);font-weight:500;}
+.trip-dates .sep{color:var(--muted);font-weight:300;}
+.trip-bottom{display:flex;justify-content:space-between;align-items:center;}
+.trip-days{font-size:11px;color:var(--muted);}
+.trip-budget{font-size:13px;font-weight:500;color:var(--forest);}
+.trip-budget small{font-size:10px;color:var(--muted);font-weight:300;}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:calc(100px + var(--safe-bot));right:20px;width:56px;height:56px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(201,150,58,.45);font-size:26px;color:#fff;cursor:pointer;border:none;z-index:90;transition:transform .15s;}
+.fab:active{transform:scale(.93);}
+
+/* ── TRIP HEADER ── */
+.trip-header{background:var(--forest);padding:calc(var(--safe-top) + 8px) 20px 14px;flex-shrink:0;}
+.trip-header-dest{font-family:'DM Serif Display',serif;font-size:22px;color:#fff;margin-top:6px;}
+.trip-header-name{font-size:10px;color:#9fb8aa;font-weight:300;letter-spacing:.08em;text-transform:uppercase;margin-top:3px;}
+.trip-header-dates{font-size:11px;color:#9fb8aa;margin-top:2px;font-weight:300;}
+
+/* ── BUDGET BAR ── */
+.budget-bar{background:var(--sand);margin:12px 14px 0;border-radius:12px;padding:11px 14px;display:flex;justify-content:space-between;flex-shrink:0;}
+.bi{text-align:center;}
+.bi .v{font-size:15px;font-weight:600;color:var(--forest);}
+.bi .l{font-size:10px;color:var(--muted);margin-top:1px;font-weight:300;}
+.bdiv{width:1px;background:var(--sand2);align-self:stretch;}
+
+/* ── DAY LIST ── */
+.days-list{padding:12px 14px calc(80px + var(--safe-bot));display:flex;flex-direction:column;gap:12px;}
+
+/* ── DAY CARD ── */
+.day-card{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);}
+.day-gallery{height:185px;position:relative;overflow:hidden;cursor:pointer;background:var(--forest);}
+.day-gallery img{width:100%;height:100%;object-fit:cover;display:block;}
+.day-gallery-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px;opacity:.3;}
+.gallery-badge{position:absolute;top:12px;left:12px;background:var(--forest);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;text-align:center;}
+.gallery-weekday{color:#9fb8aa;font-size:9px;display:block;margin-top:1px;}
+.gallery-count{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.45);color:#fff;font-size:11px;padding:3px 9px;border-radius:20px;backdrop-filter:blur(4px);}
+
+.day-body{padding:13px 15px;display:flex;flex-direction:column;gap:9px;}
+.df label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500;display:block;margin-bottom:3px;}
+.df p{font-size:14px;color:var(--ink);line-height:1.5;}
+
+/* Majutus rich */
+.majutus-block{background:var(--cream);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;}
+.majutus-name{font-size:14px;font-weight:500;color:var(--ink);}
+.majutus-note{font-size:12px;color:var(--muted);font-style:italic;line-height:1.4;}
+.rich-links{display:flex;gap:7px;flex-wrap:wrap;margin-top:2px;}
+.rl{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--moss);text-decoration:none;background:var(--sand);border-radius:6px;padding:4px 9px;cursor:pointer;border:none;}
+
+/* expand */
+.expand-btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border-top:1px solid var(--sand);font-size:12px;color:var(--moss);cursor:pointer;font-weight:500;background:none;border-left:none;border-right:none;border-bottom:none;width:100%;}
+.expand-btn svg{transition:transform .2s;}
+.expand-btn.open svg{transform:rotate(180deg);}
+.expanded{padding:13px 15px;border-top:1px solid var(--sand);display:none;flex-direction:column;gap:11px;}
+.expanded.open{display:flex;}
+
+.sec{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:500;padding-bottom:5px;border-bottom:1px solid var(--sand);margin-top:3px;}
+
+/* sights */
+.sights-list{display:flex;flex-direction:column;gap:7px;}
+.sight-row{background:var(--cream);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:5px;}
+.sight-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.sight-name{font-size:14px;font-weight:500;color:var(--ink);}
+.sight-cost{font-size:13px;font-weight:500;color:var(--forest);white-space:nowrap;margin-left:8px;}
+.sights-sub{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:3px 1px;}
+.sights-sub span:last-child{font-weight:500;color:var(--ink);}
+
+/* cost categories on day view */
+.cost-cat{background:var(--cream);border-radius:10px;overflow:hidden;}
+.cost-cat-hdr{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;}
+.cost-cat-hdr label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500;pointer-events:none;}
+.cost-cat-hdr .ctot{font-size:15px;font-weight:500;color:var(--forest);}
+.cost-items{border-top:1px solid var(--sand);padding:8px 12px;display:none;flex-direction:column;gap:5px;}
+.cost-items.open{display:flex;}
+.ci-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:6px;}
+.ci-desc{color:var(--ink);flex:1;}
+.ci-amt{color:var(--forest);font-weight:500;white-space:nowrap;}
+.ci-rcpt{font-size:16px;cursor:pointer;background:none;border:none;}
+
+.day-total{background:var(--forest);border-radius:10px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:3px;}
+.day-total span{color:#9fb8aa;font-size:12px;}
+.day-total strong{color:#fff;font-size:17px;}
+
+.notes-box{background:#f0ebe0;border-radius:8px;padding:10px 12px;font-size:13px;color:var(--ink);line-height:1.6;font-style:italic;}
+
+.edit-day-btn{display:flex;align-items:center;justify-content:center;gap:6px;margin:0 15px 13px;padding:10px;border:1.5px solid var(--moss);border-radius:10px;color:var(--moss);font-size:13px;font-weight:500;cursor:pointer;background:none;width:calc(100% - 30px);}
+
+/* ── FORM SCREEN ── */
+.form-topbar{background:var(--forest);padding:calc(var(--safe-top) + 8px) 16px 14px;display:flex;align-items:flex-end;justify-content:space-between;flex-shrink:0;}
+.form-topbar h2{font-family:'DM Serif Display',serif;color:#fff;font-size:20px;}
+.save-btn{background:var(--gold);color:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:13px;font-weight:500;cursor:pointer;}
+.form-body{padding:15px;display:flex;flex-direction:column;gap:11px;}
+
+.ff{display:flex;flex-direction:column;gap:5px;}
+.ff label{font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.07em;}
+.ff input,.ff textarea,.ff select{background:var(--card);border:1.5px solid var(--sand);border-radius:10px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;-webkit-appearance:none;appearance:none;width:100%;}
+.ff textarea{min-height:68px;resize:none;}
+.ff input:focus,.ff textarea:focus{border-color:var(--moss);}
+.frow{display:flex;gap:9px;}
+.frow .ff{flex:1;min-width:0;}
+
+.cig{display:flex;}
+.cig input{flex:1;border-radius:10px 0 0 10px;border-right:none;min-width:0;}
+.cig select{width:70px;border-radius:0 10px 10px 0;font-size:12px;padding:10px 4px;background:var(--sand);border:1.5px solid var(--sand);border-left:none;color:var(--ink);flex-shrink:0;}
+
+/* rate box */
+.rate-box{background:var(--card);border:1.5px solid var(--sand);border-radius:12px;padding:11px 13px;display:flex;flex-direction:column;gap:8px;}
+.rate-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:500;}
+.rate-row{display:flex;align-items:center;gap:8px;}
+.rate-row label{font-size:12px;color:var(--ink);width:34px;flex-shrink:0;font-weight:500;}
+.rate-row input{flex:1;background:var(--cream);border:1.5px solid var(--sand);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--ink);outline:none;font-family:'DM Sans',sans-serif;width:auto;}
+.rate-row span{font-size:11px;color:var(--muted);white-space:nowrap;}
+.rate-del{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 2px;}
+.rate-add{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--moss);background:none;border:none;cursor:pointer;font-weight:500;padding:2px 0;}
+
+/* rich entry (majutus / sights in form) */
+.rich-entry{background:var(--cream);border-radius:10px;padding:11px;display:flex;flex-direction:column;gap:7px;position:relative;}
+.rich-entry input,.rich-entry textarea{background:var(--card);border:1.5px solid var(--sand);border-radius:8px;padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;width:100%;}
+.rich-entry textarea{min-height:52px;resize:none;}
+.rich-entry input:focus,.rich-entry textarea:focus{border-color:var(--moss);}
+.remove-entry{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;}
+.add-entry-btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:10px;border:1.5px dashed var(--sand2);border-radius:10px;color:var(--moss);font-size:12px;font-weight:500;cursor:pointer;background:none;width:100%;}
+
+/* collapsible cost category in form */
+.fcc{border:1.5px solid var(--sand);border-radius:12px;overflow:hidden;}
+.fcc-hdr{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;cursor:pointer;background:var(--card);}
+.fcc-hdr .fcc-label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:500;}
+.fcc-hdr .fcc-right{display:flex;align-items:center;gap:6px;}
+.fcc-total{font-size:14px;font-weight:500;color:var(--forest);}
+.fcc-arr{font-size:10px;color:var(--muted);transition:transform .2s;}
+.fcc-hdr.open .fcc-arr{transform:rotate(180deg);}
+.fcc-body{display:none;border-top:1px solid var(--sand);padding:11px;background:var(--cream);flex-direction:column;gap:9px;}
+.fcc-body.open{display:flex;}
+.cli{display:flex;gap:5px;align-items:center;}
+.cli input[type=text]{flex:2;border-radius:8px;border:1.5px solid var(--sand);padding:8px 9px;font-size:13px;background:var(--card);font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;min-width:0;}
+.cli input[type=number]{flex:1;border-radius:8px;border:1.5px solid var(--sand);padding:8px 9px;font-size:13px;background:var(--card);font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;min-width:0;}
+.cli select{width:60px;border-radius:8px;font-size:11px;padding:8px 3px;background:var(--sand);border:1.5px solid var(--sand);color:var(--ink);-webkit-appearance:none;flex-shrink:0;text-align:center;}
+.cli .rcpt-btn{background:var(--sand);border:none;border-radius:8px;padding:8px 9px;font-size:13px;cursor:pointer;flex-shrink:0;}
+.cli .rm-line{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 2px;}
+.add-line{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--moss);background:none;border:none;cursor:pointer;font-weight:500;padding:2px 0;}
+
+/* photo area */
+.photo-area{border:2px dashed var(--sand2);border-radius:12px;padding:16px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.photo-thumbs{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px;justify-content:flex-start;}
+.photo-thumb{width:64px;height:64px;border-radius:9px;position:relative;overflow:hidden;flex-shrink:0;background:var(--sand);}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.rm-photo{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;width:17px;height:17px;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;}
+
+/* gallery modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;}
+.modal.open{display:flex;}
+.modal-img{max-width:100%;max-height:60vh;border-radius:12px;object-fit:contain;}
+.modal-close{color:#fff;font-size:13px;cursor:pointer;background:none;border:none;display:flex;align-items:center;gap:4px;align-self:flex-end;}
+.modal-dots{display:flex;gap:7px;}
+.modal-dots span{width:6px;height:6px;border-radius:50%;background:#444;}
+.modal-dots span.a{background:#fff;}
+.modal-caption{color:#aaa;font-size:12px;}
+
+/* receipt modal */
+.rcpt-modal-img{max-width:100%;max-height:65vh;border-radius:10px;object-fit:contain;}
+
+/* empty states */
+.empty{text-align:center;padding:60px 30px;color:var(--muted);}
+.empty .ei{font-size:48px;margin-bottom:12px;}
+.empty p{font-size:14px;line-height:1.6;}
+
+/* toast */
+.toast{position:fixed;bottom:calc(30px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(20px);background:var(--forest);color:#fff;font-size:13px;padding:10px 20px;border-radius:20px;opacity:0;transition:all .3s;z-index:300;white-space:nowrap;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* delete btn */
+.danger-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:11px;border:1.5px solid var(--danger);border-radius:10px;color:var(--danger);font-size:13px;font-weight:500;cursor:pointer;background:none;width:100%;}
+
+/* export/import */
+.tools-row{display:flex;gap:8px;}
+.tool-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px;border:1.5px solid var(--sand2);border-radius:10px;color:var(--moss);font-size:12px;font-weight:500;cursor:pointer;background:var(--card);}
+
+/* member chips */
+.member-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{background:var(--sand);border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;border:1.5px solid transparent;}
+.chip.sel{background:var(--forest);color:#fff;border-color:var(--forest);}
+
+/* no-internet note */
+.offline-note{background:#fff8e7;border:1px solid #f0d080;border-radius:8px;padding:9px 12px;font-size:12px;color:#7a6020;line-height:1.5;}
+
+
+/* ── PIN SCREEN ── */
+.pin-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--sand2);background:transparent;transition:background .15s,border-color .15s;}
+.pin-dot.filled{background:var(--forest);border-color:var(--forest);}
+.pin-dot.error{background:var(--danger);border-color:var(--danger);}
+.pin-key{width:72px;height:72px;border-radius:50%;background:var(--card);border:1.5px solid var(--sand);font-family:'DM Sans',sans-serif;font-size:22px;font-weight:500;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s;}
+.pin-key:active{background:var(--sand);}
+.pin-key-clear,.pin-key-del{font-size:13px;background:var(--cream);color:var(--muted);border-color:transparent;}
+
+/* ── SEARCH & FILTER ── */
+.filter-chip{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,255,255,.7);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.filter-chip.active{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:500;}
+.search-result-card{background:var(--card);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;box-shadow:0 1px 6px rgba(0,0,0,.06);cursor:pointer;}
+.src-type{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500;}
+.src-main{font-size:14px;font-weight:500;color:var(--ink);}
+.src-sub{font-size:12px;color:var(--muted);}
+.src-trip{font-size:11px;color:var(--moss);margin-top:2px;}
+#search-input::placeholder{color:rgba(255,255,255,.45);}
+#search-input::-webkit-search-cancel-button{display:none;}
+/* ── SCROLLBAR HIDE ── */
+.scroll-area::-webkit-scrollbar{display:none;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════════════════════════════
+       SCREEN 1: TRIP LIBRARY
+  ══════════════════════════════════ -->
+  <div class="screen" id="s-trips">
+    <div class="topbar">
+      <div class="topbar-title">Reisipäevik</div>
+      <div class="topbar-sub">Reisiplaanija &amp; päevik</div>
+      <div class="topbar-actions">
+        <button class="tool-btn" style="border-color:rgba(255,255,255,.2);color:#9fb8aa;background:rgba(255,255,255,.08);font-size:11px;padding:6px 11px;" onclick="openSettingsWithPin()">⚙️ Seaded</button>
+        <div id="drive-status-btn" style="display:none;">
+          <button class="tool-btn" style="border-color:rgba(255,255,255,.2);color:#4ade80;background:rgba(255,255,255,.08);font-size:11px;padding:6px 11px;" onclick="driveSave()">☁️ Sünki</button>
+        </div>
+      </div>
+    </div>
+    <!-- SEARCH BAR -->
+    <div style="padding:10px 14px 0;background:var(--forest);flex-shrink:0;">
+      <div style="position:relative;">
+        <input id="search-input" type="search" placeholder="Otsi majutust, asukohta, kulusid..."
+          style="width:100%;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);border-radius:10px;padding:9px 12px 9px 36px;font-family:'DM Sans',sans-serif;font-size:14px;color:#fff;outline:none;-webkit-appearance:none;"
+          oninput="doSearch()" onfocus="showSearch(true)" />
+        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none;">🔍</span>
+        <button id="search-clear" onclick="clearSearch()" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <!-- Filter chips -->
+      <div id="search-filters" style="display:none;padding:8px 0 10px;display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:10px;">
+        <button class="filter-chip active" data-filter="all"     onclick="setFilter(this,'all')">Kõik</button>
+        <button class="filter-chip"        data-filter="location" onclick="setFilter(this,'location')">📍 Asukoht</button>
+        <button class="filter-chip"        data-filter="cost"     onclick="setFilter(this,'cost')">💶 Kulud</button>
+        <button class="filter-chip"        data-filter="sight"    onclick="setFilter(this,'sight')">🏛 Vaatamisväärsused</button>
+        <button class="filter-chip"        data-filter="acc"      onclick="setFilter(this,'acc')">🏨 Majutus</button>
+      </div>
+    </div>
+    <!-- SEARCH RESULTS -->
+    <div id="search-results-wrap" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+      <div id="search-results" style="padding:10px 14px 80px;display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+    <div class="scroll-area" id="trips-scroll">
+      <div class="trip-list" id="trip-list"></div>
+    </div>
+    <button class="fab" onclick="openNewTrip()">＋</button>
+  </div>
+
+  <!-- ══════════════════════════════════
+       SCREEN 2: TRIP DAYS
+  ══════════════════════════════════ -->
+  <div class="screen hidden" id="s-days">
+    <div class="trip-header" id="trip-header">
+      <button class="nav-back" onclick="goTo('s-trips','left')">← Reisid</button>
+      <div class="trip-header-dest" id="th-dest"></div>
+      <div class="trip-header-name" id="th-name"></div>
+      <div class="trip-header-dates" id="th-dates"></div>
+    </div>
+    <div class="budget-bar" id="budget-bar">
+      <div class="bi"><div class="v" id="bb-total">0 €</div><div class="l">Kogukulu</div></div>
+      <div class="bdiv"></div>
+      <div class="bi"><div class="v" id="bb-avg">0 €</div><div class="l">Päev keskmiselt</div></div>
+      <div class="bdiv"></div>
+      <div class="bi"><div class="v" id="bb-days">0</div><div class="l">Päeva kokku</div></div>
+    </div>
+    <!-- Trip summary panel -->
+    <div id="trip-summary-wrap" style="margin:10px 14px 0;flex-shrink:0;display:none;">
+      <div class="fcc" id="trip-summary-fcc">
+        <div class="fcc-hdr" onclick="toggleFcc(this)" style="background:var(--forest);border-radius:10px 10px 0 0;">
+          <span class="fcc-label" style="color:#9fb8aa;">Kulude kokkuvõte kategooriate kaupa</span>
+          <div class="fcc-right"><span class="fcc-arr" style="color:#9fb8aa;">▼</span></div>
+        </div>
+        <div class="fcc-body" id="trip-summary-body" style="background:var(--card);border-radius:0 0 10px 10px;"></div>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="days-list" id="days-list"></div>
+    </div>
+    <button class="fab" onclick="openNewDay()">＋</button>
+  </div>
+
+  <!-- ══════════════════════════════════
+       SCREEN 3: TRIP FORM
+  ══════════════════════════════════ -->
+  <div class="screen hidden" id="s-trip-form">
+    <div class="form-topbar">
+      <div>
+        <button class="nav-back" onclick="goTo('s-trips','left')">← Tagasi</button>
+        <h2 id="trip-form-title">Uus reis</h2>
+      </div>
+      <button class="save-btn" onclick="saveTrip()">Salvesta</button>
+    </div>
+    <div class="scroll-area">
+      <div class="form-body">
+        <input type="hidden" id="tf-id">
+        <div class="sec">Reisi info</div>
+        <div class="ff"><label>Reisi nimi</label><input id="tf-name" type="text" placeholder="nt Suvepuhkus 2026"></div>
+        <div class="ff"><label>Sihtkoht / pealkiri</label><input id="tf-dest" type="text" placeholder="nt Poola &amp; Austria"></div>
+        <div class="frow">
+          <div class="ff"><label>Alguskuupäev</label><input id="tf-start" type="date"></div>
+          <div class="ff"><label>Lõppkuupäev</label><input id="tf-end" type="date"></div>
+        </div>
+
+        <div class="sec" style="margin-top:4px;">Kaanefoto</div>
+        <div class="photo-area" onclick="document.getElementById('tf-cover-inp').click()">
+          <div style="font-size:28px;">🖼️</div>
+          <div>Puuduta kaanefoto valimiseks</div>
+          <div style="font-size:11px;color:#bbb;">Kamerarollist</div>
+          <input type="file" id="tf-cover-inp" accept="image/*" style="display:none" onchange="setTripCover(event)">
+          <div id="tf-cover-preview" class="photo-thumbs"></div>
+        </div>
+
+        <div class="sec" style="margin-top:4px;">Vahetuskursid (→ EUR)</div>
+        <div class="rate-box">
+          <div class="rate-title">Fikseeritud kursid sellele reisile</div>
+          <div id="rate-rows"></div>
+          <button class="rate-add" onclick="addRateRow()">＋ Lisa valuuta</button>
+        </div>
+
+        <div class="sec" style="margin-top:4px;">Reisijad</div>
+        <div class="ff"><label>Reisijate nimed (komaga eraldatud)</label><input id="tf-members" type="text" placeholder="nt Mari, Jüri, Kai, Toomas"></div>
+
+        <div id="tf-delete-wrap" style="display:none;margin-top:8px;">
+          <button class="danger-btn" onclick="deleteTrip()">🗑 Kustuta reis</button>
+        </div>
+        <div style="height:30px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       SCREEN 4: DAY FORM
+  ══════════════════════════════════ -->
+  <div class="screen hidden" id="s-day-form">
+    <div class="form-topbar">
+      <div>
+        <button class="nav-back" onclick="goTo('s-days','left')">← Tagasi</button>
+        <h2 id="day-form-title">Lisa päev</h2>
+      </div>
+      <button class="save-btn" onclick="saveDay()">Salvesta</button>
+    </div>
+    <div class="scroll-area">
+      <div class="form-body">
+        <input type="hidden" id="df-id">
+
+        <div class="sec">Põhiteave</div>
+        <div class="frow">
+          <div class="ff"><label>Kuupäev</label><input id="df-date" type="date" oninput="updateWeekday()"></div>
+          <div class="ff"><label>Nädalapäev</label><input id="df-weekday" type="text" readonly style="background:#f0ebe0;color:#888;"></div>
+        </div>
+        <div class="ff"><label>Alguspunkt</label><input id="df-from" type="text" placeholder="nt Tartu"></div>
+        <div class="ff"><label>Lõpp-punkt</label><input id="df-to" type="text" placeholder="nt Lodz"></div>
+        <div class="ff"><label>Hommikusöök</label><input id="df-breakfast" type="text" placeholder="Kus sõite hommikusööki?"></div>
+        <div class="ff"><label>Päevakava</label><textarea id="df-plan" placeholder="Mis sel päeval toimus?"></textarea></div>
+
+        <div class="sec" style="margin-top:4px;">Majutus</div>
+        <div class="rich-entry" style="position:relative;">
+          <div class="ff"><label>Nimi</label><input id="df-acc-name" type="text" placeholder="Hotelli nimi, Airbnb..."></div>
+          <div class="ff"><label>Lisainfo</label><textarea id="df-acc-note" placeholder="Toanumber, eritingimused, märkused..."></textarea></div>
+          <div class="ff"><label>Google Maps link</label><input id="df-acc-maps" type="url" placeholder="https://maps.google.com/..."></div>
+          <div class="ff"><label>Veebileht</label><input id="df-acc-web" type="url" placeholder="https://..."></div>
+        </div>
+
+        <div class="sec" style="margin-top:4px;">Vaatamisväärsused</div>
+        <div id="df-sights-wrap"></div>
+        <button class="add-entry-btn" onclick="addSightEntry()">＋ Lisa vaatamisväärsus</button>
+
+        <div class="sec" style="margin-top:4px;">Kulud</div>
+        <div id="df-costs-wrap"></div>
+
+        <div class="sec" style="margin-top:4px;">Fotod</div>
+        <div class="photo-area" onclick="document.getElementById('df-photos-inp').click()">
+          <div style="font-size:26px;">📷</div>
+          <div>Puuduta fotode lisamiseks</div>
+          <div style="font-size:11px;color:#bbb;">Kamerarollist (vali mitu korraga)</div>
+          <input type="file" id="df-photos-inp" accept="image/*" multiple style="display:none" onchange="addDayPhotos(event)">
+          <div id="df-photos-preview" class="photo-thumbs"></div>
+        </div>
+
+        <div class="sec" style="margin-top:4px;">Märkused</div>
+        <div class="ff"><textarea id="df-notes" placeholder="Mõtted, tähelepanekud, laste lemmikmomendid..."></textarea></div>
+
+        <div id="df-delete-wrap" style="display:none;margin-top:8px;">
+          <button class="danger-btn" onclick="deleteDay()">🗑 Kustuta päev</button>
+        </div>
+        <div style="height:30px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       SCREEN 5: PIN ENTRY (for settings)
+  ══════════════════════════════════ -->
+  <div class="screen hidden" id="s-pin">
+    <div class="form-topbar">
+      <div>
+        <button class="nav-back" onclick="goTo('s-trips')">← Tagasi</button>
+        <h2 id="pin-screen-title">Seaded</h2>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="form-body" style="align-items:center;padding-top:40px;">
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="font-size:48px;margin-bottom:12px;">🔒</div>
+          <div id="pin-instruction" style="font-size:15px;color:var(--ink);font-weight:500;"></div>
+          <div id="pin-sub" style="font-size:12px;color:var(--muted);margin-top:5px;"></div>
+        </div>
+        <!-- PIN dots display -->
+        <div style="display:flex;gap:14px;margin-bottom:32px;" id="pin-dots">
+          <div class="pin-dot" id="pd0"></div>
+          <div class="pin-dot" id="pd1"></div>
+          <div class="pin-dot" id="pd2"></div>
+          <div class="pin-dot" id="pd3"></div>
+        </div>
+        <!-- Numpad -->
+        <div style="display:grid;grid-template-columns:repeat(3,72px);gap:12px;justify-content:center;">
+          <button class="pin-key" onclick="pinPress('1')">1</button>
+          <button class="pin-key" onclick="pinPress('2')">2</button>
+          <button class="pin-key" onclick="pinPress('3')">3</button>
+          <button class="pin-key" onclick="pinPress('4')">4</button>
+          <button class="pin-key" onclick="pinPress('5')">5</button>
+          <button class="pin-key" onclick="pinPress('6')">6</button>
+          <button class="pin-key" onclick="pinPress('7')">7</button>
+          <button class="pin-key" onclick="pinPress('8')">8</button>
+          <button class="pin-key" onclick="pinPress('9')">9</button>
+          <button class="pin-key pin-key-clear" onclick="pinClear()" style="font-size:13px;">Tühjenda</button>
+          <button class="pin-key" onclick="pinPress('0')">0</button>
+          <button class="pin-key pin-key-del" onclick="pinDelete()">⌫</button>
+        </div>
+        <div id="pin-error" style="color:var(--danger);font-size:13px;margin-top:20px;min-height:20px;text-align:center;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       SCREEN 6: SETTINGS (PIN-protected)
+  ══════════════════════════════════ -->
+  <div class="screen hidden" id="s-settings">
+    <div class="form-topbar">
+      <div>
+        <button class="nav-back" onclick="goTo('s-trips')">← Tagasi</button>
+        <h2>Seaded</h2>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="form-body">
+
+        <div class="sec">Google Drive sünkroniseerimine</div>
+        <div class="offline-note">
+          📋 <strong>Client ID lisamine:</strong> Mine <em>console.cloud.google.com</em>, loo projekt, luba Drive API + Picker API, loo OAuth 2.0 Client ID (Web application) ja kopeeri see siia.
+        </div>
+        <div class="ff">
+          <label>Google OAuth Client ID</label>
+          <input id="cfg-client-id" type="text" placeholder="123456789-abc...apps.googleusercontent.com" style="font-size:12px;">
+        </div>
+        <button class="save-btn" style="width:100%;border-radius:10px;padding:11px;" onclick="saveClientId()">Salvesta Client ID</button>
+
+        <div id="drive-section" style="display:none;margin-top:4px;">
+          <div class="sec">Drive toimingud</div>
+          <div id="drive-user-info" style="background:var(--card);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--muted);margin-bottom:8px;display:none;">
+            Sisse logitud: <strong id="drive-email"></strong>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="tool-btn" style="justify-content:flex-start;gap:10px;padding:13px;" onclick="driveSignIn()">
+              <span style="font-size:20px;">🔑</span>
+              <div style="text-align:left;"><div style="font-weight:500;color:var(--ink);">Logi Google'iga sisse</div><div style="font-size:11px;color:var(--muted);">Vajalik enne sünkroonimist</div></div>
+            </button>
+            <button class="tool-btn" style="justify-content:flex-start;gap:10px;padding:13px;" onclick="driveSave()">
+              <span style="font-size:20px;">☁️</span>
+              <div style="text-align:left;"><div style="font-weight:500;color:var(--ink);">Salvesta Drive'i</div><div style="font-size:11px;color:var(--muted);">Kirjutab reisipaevik.json Drive'i</div></div>
+            </button>
+            <button class="tool-btn" style="justify-content:flex-start;gap:10px;padding:13px;" onclick="driveLoad()">
+              <span style="font-size:20px;">⬇️</span>
+              <div style="text-align:left;"><div style="font-weight:500;color:var(--ink);">Lae Drive'ist</div><div style="font-size:11px;color:var(--muted);">Asendab kohalikud andmed Drive'i omadega</div></div>
+            </button>
+            <button class="tool-btn" style="justify-content:flex-start;gap:10px;padding:13px;border-color:var(--sand2);" onclick="driveSignOut()">
+              <span style="font-size:20px;">🚪</span>
+              <div style="text-align:left;"><div style="font-weight:500;color:var(--muted);">Logi välja</div></div>
+            </button>
+          </div>
+        </div>
+
+        <div class="sec" style="margin-top:4px;">PIN-kood</div>
+        <button class="tool-btn" style="justify-content:flex-start;gap:10px;padding:13px;" onclick="openChangePin()">
+          <span style="font-size:20px;">🔑</span>
+          <div style="text-align:left;"><div style="font-weight:500;color:var(--ink);">Muuda PIN-koodi</div><div style="font-size:11px;color:var(--muted);">Seadete kaitse</div></div>
+        </button>
+
+        <div class="sec" style="margin-top:4px;">Kohalik varundus</div>
+        <div style="display:flex;gap:8px;">
+          <button class="tool-btn" style="flex:1;padding:13px;flex-direction:column;gap:4px;" onclick="exportData()">
+            <span style="font-size:22px;">⬇</span>
+            <span style="font-size:11px;">Lae alla (JSON)</span>
+          </button>
+          <label class="tool-btn" style="flex:1;padding:13px;flex-direction:column;gap:4px;cursor:pointer;">
+            <span style="font-size:22px;">⬆</span>
+            <span style="font-size:11px;">Taasta (JSON)</span>
+            <input type="file" accept=".json" style="display:none" onchange="importData(event)">
+          </label>
+        </div>
+
+        <div style="height:40px;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── GALLERY MODAL ── -->
+<div class="modal" id="gallery-modal">
+  <button class="modal-close" onclick="closeModal('gallery-modal')">✕ Sulge</button>
+  <img class="modal-img" id="gal-img" src="" alt="">
+  <div class="modal-dots" id="gal-dots"></div>
+  <div class="modal-caption" id="gal-caption"></div>
+</div>
+
+<!-- ── RECEIPT MODAL ── -->
+<div class="modal" id="rcpt-modal">
+  <button class="modal-close" onclick="closeModal('rcpt-modal')">✕ Sulge</button>
+  <img class="rcpt-modal-img" id="rcpt-img" src="" alt="Kviitung">
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  DATA LAYER — IndexedDB
+// ══════════════════════════════════════════
+const DB_NAME = 'reisipaevik', DB_VER = 1;
+let db;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('trips')) d.createObjectStore('trips', {keyPath:'id'});
+      if (!d.objectStoreNames.contains('days'))  d.createObjectStore('days',  {keyPath:'id'});
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror = e => rej(e);
+  });
+}
+
+function dbGet(store, id) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store,'readonly');
+    const req = tx.objectStore(store).get(id);
+    req.onsuccess = () => res(req.result);
+    req.onerror = rej;
+  });
+}
+function dbGetAll(store) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store,'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => res(req.result);
+    req.onerror = rej;
+  });
+}
+function dbPut(store, obj) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store,'readwrite');
+    const req = tx.objectStore(store).put(obj);
+    req.onsuccess = () => res(req.result);
+    req.onerror = rej;
+  });
+}
+function dbDelete(store, id) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store,'readwrite');
+    const req = tx.objectStore(store).delete(id);
+    req.onsuccess = () => res();
+    req.onerror = rej;
+  });
+}
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let currentTripId = null;
+let editingDayId  = null;
+let editingTripId = null;
+let dayPhotos     = {}; // dayId -> [base64]
+let tripCover     = {}; // tripId -> base64
+
+const CURRENCIES = ['EUR','PLN','USD','GBP','CHF','SEK','NOK','DKK','CZK','HUF'];
+const WEEKDAYS   = ['pühapäev','esmaspäev','teisipäev','kolmapäev','neljapäev','reede','laupäev'];
+const COST_CATS  = [
+  {key:'majutus',   label:'Majutuse kulu'},
+  {key:'majutusmax',label:'Majutuse maksimaalne'},
+  {key:'turism',    label:'Turismi kulu'},
+  {key:'toit',      label:'Toit ja kaubad'},
+  {key:'kaubad',    label:'Kaubad'},
+  {key:'lennud',    label:'Lennupiletid / autod'},
+  {key:'parkimine', label:'Parkimine'},
+  {key:'kutus',     label:'Kütus'},
+  {key:'muud',      label:'Muud kulud'},
+];
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+function goTo(screenId, direction='right') {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.add('hidden');
+    s.classList.remove('slide-left');
+  });
+  const target = document.getElementById(screenId);
+  target.classList.remove('hidden','slide-left');
+}
+
+// ══════════════════════════════════════════
+//  SCREEN 1: TRIP LIBRARY
+// ══════════════════════════════════════════
+async function renderTrips() {
+  const list = document.getElementById('trip-list');
+  try {
+    const trips = await dbGetAll('trips');
+    const days  = await dbGetAll('days');
+    trips.sort((a,b) => (b.startDate||'').localeCompare(a.startDate||''));
+    if (!trips.length) {
+      list.innerHTML = '<div class="empty"><div class="ei">✈️</div><p>Reiside kogu on tühi.<br>Vajuta <strong>＋</strong> uue reisi lisamiseks.</p></div>';
+    } else {
+      list.innerHTML = trips.map(function(t) {
+        var tDays = days.filter(function(d) { return d.tripId === t.id; });
+        var total = tDays.reduce(function(s,d) { return s + dayTotalEur(d, t.rates||[]); }, 0);
+        var cover = t.cover
+          ? '<img src="' + t.cover + '" style="width:100%;height:100%;object-fit:cover;display:block;">'
+          : '<div style="width:100%;height:100%;background:linear-gradient(135deg,var(--forest),var(--forest2));"></div>';
+        var dStr = tDays.length ? ('☀️ ' + tDays.length + ' päeva') : 'Päevi pole lisatud';
+        var dateStr = t.startDate && t.endDate
+          ? ('<span>' + fmtDate(t.startDate) + '</span><span class="sep">→</span><span>' + fmtDate(t.endDate) + '</span>')
+          : '<span style="color:var(--muted)">Kuupäevad puuduvad</span>';
+        var tid = t.id;
+        return '<div class="trip-card" data-tid="' + tid + '" data-action="open">'
+          + '<div class="trip-thumb">' + cover + '<div class="trip-thumb-overlay"></div>'
+          + '<div class="trip-thumb-label">'
+          + '<h3>' + esc(t.dest||'Nimetu reis') + '</h3>'
+          + '<div class="trip-name-tag">' + esc(t.name||'') + '</div>'
+          + '</div>'
+          + '<button style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,.4);border:none;border-radius:20px;color:#fff;font-size:11px;padding:5px 10px;cursor:pointer;z-index:2;" data-tid="' + tid + '" data-action="edit">✏️ Muuda</button>'
+          + '</div>'
+          + '<div class="trip-meta">'
+          + '<div class="trip-dates">' + dateStr + '</div>'
+          + '<div class="trip-bottom">'
+          + '<span class="trip-days">' + dStr + '</span>'
+          + '<span class="trip-budget">' + fmtEur(total) + ' <small>kogu eelarve</small></span>'
+          + '</div></div></div>';
+      }).join('');
+    }
+  } catch(e) {
+    console.error('renderTrips error:', e);
+    list.innerHTML = '<div class="empty"><div class="ei">⚠️</div><p>Viga laadimisel: ' + e.message + '</p></div>';
+  }
+}
+
+function openTrip(id) {
+  currentTripId = id;
+  renderDays();
+  goTo('s-days');
+}
+
+// ══════════════════════════════════════════
+//  SCREEN 2: TRIP DAYS
+// ══════════════════════════════════════════
+async function renderDays() {
+  const trip = await dbGet('trips', currentTripId);
+  if (!trip) return;
+
+  document.getElementById('th-dest').textContent  = trip.dest || '';
+  document.getElementById('th-name').textContent  = trip.name || '';
+  document.getElementById('th-dates').textContent =
+    trip.startDate && trip.endDate ? `${fmtDate(trip.startDate)} – ${fmtDate(trip.endDate)}` : '';
+
+  const allDays = await dbGetAll('days');
+  const days = allDays.filter(d => d.tripId === currentTripId)
+                      .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+  const rates = trip.rates || [];
+  const total = days.reduce((s,d) => s + dayTotalEur(d, rates), 0);
+  const avg   = days.length ? total / days.length : 0;
+  document.getElementById('bb-total').textContent = fmtEur(total);
+  document.getElementById('bb-avg').textContent   = fmtEur(avg);
+  document.getElementById('bb-days').textContent  = days.length;
+
+  // Render trip-level category summary
+  renderTripSummary(days, rates);
+
+  const list = document.getElementById('days-list');
+  if (!days.length) {
+    list.innerHTML = `<div class="empty"><div class="ei">📅</div><p>Päevi pole lisatud.<br>Vajuta <strong>＋</strong> esimese päeva lisamiseks.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = days.map(d => renderDayCard(d, trip)).join('');
+}
+
+function renderTripSummary(days, rates) {
+  const wrap = document.getElementById('trip-summary-wrap');
+  const body = document.getElementById('trip-summary-body');
+  if (!days.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  const COST_CATS_LOCAL = [
+    {key:'majutus',    label:'Majutuse kulu'},
+    {key:'majutusmax', label:'Majutuse maksimaalne'},
+    {key:'turism',     label:'Turismi kulu'},
+    {key:'toit',       label:'Toit ja kaubad'},
+    {key:'kaubad',     label:'Kaubad'},
+    {key:'lennud',     label:'Lennupiletid / autod'},
+    {key:'parkimine',  label:'Parkimine'},
+    {key:'kutus',      label:'Kütus'},
+    {key:'muud',       label:'Muud kulud'},
+  ];
+
+  let html = '';
+  let grandTotal = 0;
+
+  for (const cat of COST_CATS_LOCAL) {
+    let catTotal = 0;
+    const allItems = [];
+
+    for (const d of days) {
+      const items = (d.costs || {})[cat.key] || [];
+      for (const it of items) {
+        const eur = toEur(it.amount || 0, it.currency || 'EUR', rates);
+        catTotal += eur;
+        if (it.desc || it.amount) {
+          const amtStr = it.amount
+            ? `${it.amount} ${it.currency||'EUR'}${(it.currency||'EUR') !== 'EUR' ? ' ≈ ' + fmtEur(eur) : ''}`
+            : '';
+          allItems.push({desc: it.desc || '', amt: amtStr, eur, date: d.date || ''});
+        }
+      }
+    }
+
+    if (catTotal === 0) continue;
+    grandTotal += catTotal;
+
+    // Sub-items collapsed inside each category row
+    const itemRows = allItems.map(it =>
+      `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:3px 0 3px 10px;border-left:2px solid var(--sand);">
+        <span>${esc(it.desc)}${it.date ? ' <span style="opacity:.6">· ' + fmtDateShort(it.date) + '</span>' : ''}</span>
+        <span style="white-space:nowrap;margin-left:8px;">${it.amt}</span>
+      </div>`
+    ).join('');
+
+    const hasItems = allItems.length > 0;
+    const catId = 'tsc-' + cat.key;
+
+    html += `<div style="border-bottom:1px solid var(--sand);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:${hasItems?'pointer':'default'};"
+           ${hasItems ? `onclick="document.getElementById('${catId}').style.display=document.getElementById('${catId}').style.display==='none'?'block':'none'"` : ''}>
+        <span style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:500;">${cat.label}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:15px;font-weight:500;color:var(--forest);">${fmtEur(catTotal)}</span>
+          ${hasItems ? '<span style="font-size:10px;color:var(--muted);">▼</span>' : ''}
+        </div>
+      </div>
+      ${hasItems ? `<div id="${catId}" style="display:none;padding:0 12px 10px;">${itemRows}</div>` : ''}
+    </div>`;
+  }
+
+  // Grand total row
+  html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--forest);border-radius:0 0 8px 8px;">
+    <span style="font-size:12px;color:#9fb8aa;">Kulud kokku (EUR)</span>
+    <strong style="font-size:17px;color:#fff;">${fmtEur(grandTotal)}</strong>
+  </div>`;
+
+  body.innerHTML = html;
+}
+
+function renderDayCard(d, trip) {
+  const rates = trip.rates || [];
+  const totalEur = dayTotalEur(d, rates);
+  const photos = d.photos || [];
+  const coverSrc = photos.length ? photos[0] : null;
+
+  const galleryHtml = coverSrc
+    ? `<img src="${coverSrc}" style="width:100%;height:100%;object-fit:cover;">`
+    : `<div class="day-gallery-empty">🌍</div>`;
+  const countHtml = photos.length > 1 ? `<div class="gallery-count">📷 ${photos.length}</div>` :
+    photos.length === 1 ? `<div class="gallery-count">📷 1</div>` : '';
+
+  // Majutus block
+  const acc = d.accommodation || {};
+  let majutusHtml = '';
+  if (acc.name) {
+    const links = [];
+    if (acc.maps) links.push(`<a class="rl" href="${esc(acc.maps)}" target="_blank">🗺 Google Maps</a>`);
+    if (acc.web)  links.push(`<a class="rl" href="${esc(acc.web)}"  target="_blank">🔗 Veebileht</a>`);
+    majutusHtml = `<div class="df"><label>Majutus</label>
+      <div class="majutus-block">
+        <div class="majutus-name">🏨 ${esc(acc.name)}</div>
+        ${acc.note ? `<div class="majutus-note">${esc(acc.note)}</div>` : ''}
+        ${links.length ? `<div class="rich-links">${links.join('')}</div>` : ''}
+      </div></div>`;
+  }
+
+  // Sights expanded
+  const sights = d.sights || [];
+  const sightsTotal = sights.reduce((s,si) => s + toEur(si.cost||0, si.currency||'EUR', rates), 0);
+  const sightsHtml = sights.length ? `
+    <div class="sec">Vaatamisväärsused</div>
+    <div class="sights-list">
+      ${sights.map(si => {
+        const links = [];
+        if (si.maps) links.push(`<a class="rl" href="${esc(si.maps)}" target="_blank">🗺 Google Maps</a>`);
+        if (si.web)  links.push(`<a class="rl" href="${esc(si.web)}"  target="_blank">🔗 Veebileht</a>`);
+        const costStr = si.cost ? `${si.cost} ${si.currency||'EUR'}${si.currency!=='EUR'?` ≈ ${fmtEur(toEur(si.cost,si.currency||'EUR',rates))}` : ''}` : '';
+        return `<div class="sight-row">
+          <div class="sight-top">
+            <div class="sight-name">${esc(si.name||'')}</div>
+            ${costStr ? `<div class="sight-cost">${costStr}</div>` : ''}
+          </div>
+          ${links.length ? `<div class="rich-links">${links.join('')}</div>` : ''}
+        </div>`;
+      }).join('')}
+      ${sightsTotal > 0 ? `<div class="sights-sub"><span>Vaatamisväärsuste kokku</span><span>${fmtEur(sightsTotal)}</span></div>` : ''}
+    </div>` : '';
+
+  // Cost categories expanded
+  const costsHtml = COST_CATS.map(cat => {
+    const items = (d.costs || {})[cat.key] || [];
+    if (!items.length) return '';
+    const catTotal = items.reduce((s,it) => s + toEur(it.amount||0, it.currency||'EUR', rates), 0);
+    const itemsHtml = items.map(it => {
+      const amtStr = it.amount ? `${it.amount} ${it.currency||'EUR'}${it.currency!=='EUR'?` ≈ ${fmtEur(toEur(it.amount,it.currency||'EUR',rates))}` : ''}` : '';
+      const rcptBtn = it.receipt ? `<button class="ci-rcpt" onclick="showReceipt('${it.receipt}')">🧾</button>` : '';
+      return `<div class="ci-row">
+        <span class="ci-desc">${esc(it.desc||'')}</span>
+        <span class="ci-amt">${amtStr}</span>
+        ${rcptBtn}
+      </div>`;
+    }).join('');
+    return `<div class="cost-cat">
+      <div class="cost-cat-hdr" onclick="toggleCostCat(this)">
+        <label>${cat.label}</label>
+        <span class="ctot">${fmtEur(catTotal)}</span>
+      </div>
+      <div class="cost-items">${itemsHtml}</div>
+    </div>`;
+  }).join('');
+
+  const notesHtml = d.notes ? `<div class="sec">Märkused</div><div class="notes-box">${esc(d.notes)}</div>` : '';
+
+  const weekday = d.date ? WEEKDAYS[new Date(d.date + 'T12:00').getDay()] : '';
+  const dateLabel = d.date ? fmtDateShort(d.date) : '—';
+
+  return `<div class="day-card" id="dc-${d.id}">
+    <div class="day-gallery" onclick="openGallery('${d.id}')">
+      ${galleryHtml}
+      <div class="gallery-badge">${dateLabel}<span class="gallery-weekday">${weekday}</span></div>
+      ${countHtml}
+    </div>
+    <div class="day-body">
+      ${d.plan ? `<div class="df"><label>Päevakava</label><p>${esc(d.plan)}</p></div>` : ''}
+      ${majutusHtml}
+    </div>
+    <button class="expand-btn" onclick="toggleExpand(this)">
+      Kuva rohkem
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <div class="expanded">
+      ${d.from||d.to ? `<div class="sec">Reisiteave</div>
+        <div style="display:flex;gap:10px;">
+          ${d.from ? `<div class="df" style="flex:1;"><label>Alguspunkt</label><p>${esc(d.from)}</p></div>` : ''}
+          ${d.to ? `<div class="df" style="flex:1;"><label>Lõpp-punkt</label><p>${esc(d.to)}</p></div>` : ''}
+        </div>` : ''}
+      ${d.breakfast ? `<div class="df"><label>Hommikusöök</label><p>${esc(d.breakfast)}</p></div>` : ''}
+      ${sightsHtml}
+      ${costsHtml ? `<div class="sec">Kulud</div>${costsHtml}` : ''}
+      ${notesHtml}
+      ${totalEur > 0 ? `<div class="day-total"><span>Kulud kokku (EUR)</span><strong>${fmtEur(totalEur)}</strong></div>` : ''}
+    </div>
+    <button class="edit-day-btn" onclick="openEditDay('${d.id}')">✏️ Muuda päeva</button>
+  </div>`;
+}
+
+function toggleExpand(btn) {
+  const card = btn.closest('.day-card');
+  const exp  = card.querySelector('.expanded');
+  const open = exp.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  btn.childNodes[0].textContent = open ? 'Kuva vähem ' : 'Kuva rohkem ';
+}
+
+function toggleCostCat(hdr) {
+  const items = hdr.nextElementSibling;
+  items.classList.toggle('open');
+}
+
+// ══════════════════════════════════════════
+//  GALLERY
+// ══════════════════════════════════════════
+let galPhotos = [], galIdx = 0;
+
+async function openGallery(dayId) {
+  const d = await dbGet('days', dayId);
+  if (!d || !d.photos || !d.photos.length) return;
+  galPhotos = d.photos;
+  galIdx = 0;
+  renderGallery();
+  document.getElementById('gallery-modal').classList.add('open');
+}
+
+function renderGallery() {
+  document.getElementById('gal-img').src = galPhotos[galIdx];
+  const dots = document.getElementById('gal-dots');
+  dots.innerHTML = galPhotos.map((_, i) =>
+    `<span class="${i===galIdx?'a':''}" onclick="galTo(${i})"></span>`).join('');
+  document.getElementById('gal-caption').textContent = `${galIdx+1} / ${galPhotos.length}`;
+}
+
+function galTo(i) { galIdx = i; renderGallery(); }
+
+function showReceipt(src) {
+  document.getElementById('rcpt-img').src = src;
+  document.getElementById('rcpt-modal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// swipe gallery
+let touchStartX = 0;
+document.getElementById('gallery-modal').addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.getElementById('gallery-modal').addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) { galIdx = (galIdx + (dx < 0 ? 1 : -1) + galPhotos.length) % galPhotos.length; renderGallery(); }
+});
+
+// ══════════════════════════════════════════
+//  SCREEN 3: TRIP FORM
+// ══════════════════════════════════════════
+let tripCoverB64 = null;
+
+function openNewTrip() {
+  editingTripId = null;
+  tripCoverB64  = null;
+  document.getElementById('tf-id').value   = '';
+  document.getElementById('tf-name').value = '';
+  document.getElementById('tf-dest').value = '';
+  document.getElementById('tf-start').value = '';
+  document.getElementById('tf-end').value  = '';
+  document.getElementById('tf-members').value = '';
+  document.getElementById('tf-cover-preview').innerHTML = '';
+  document.getElementById('tf-delete-wrap').style.display = 'none';
+  document.getElementById('trip-form-title').textContent = 'Uus reis';
+  renderDefaultRates();
+  goTo('s-trip-form');
+}
+
+async function openEditTrip(id) {
+  editingTripId = id;
+  const t = await dbGet('trips', id);
+  if (!t) return;
+  tripCoverB64 = t.cover || null;
+  document.getElementById('tf-id').value      = t.id;
+  document.getElementById('tf-name').value    = t.name || '';
+  document.getElementById('tf-dest').value    = t.dest || '';
+  document.getElementById('tf-start').value   = t.startDate || '';
+  document.getElementById('tf-end').value     = t.endDate || '';
+  document.getElementById('tf-members').value = (t.members||[]).join(', ');
+  document.getElementById('tf-cover-preview').innerHTML = t.cover
+    ? `<div class="photo-thumb"><img src="${t.cover}"><button class="rm-photo" onclick="tripCoverB64=null;this.closest('.photo-thumb').remove()">×</button></div>` : '';
+  document.getElementById('tf-delete-wrap').style.display = 'block';
+  document.getElementById('trip-form-title').textContent = 'Muuda reisi';
+  renderRates(t.rates || [{cur:'PLN',rate:0.234},{cur:'USD',rate:0.92}]);
+  goTo('s-trip-form');
+}
+
+function renderDefaultRates() {
+  renderRates([{cur:'PLN',rate:0.234},{cur:'USD',rate:0.92},{cur:'CHF',rate:1.04}]);
+}
+
+function renderRates(rates) {
+  const wrap = document.getElementById('rate-rows');
+  wrap.innerHTML = rates.map((r,i) => rateRowHtml(r.cur, r.rate)).join('');
+}
+
+function rateRowHtml(cur, rate) {
+  const opts = CURRENCIES.map(c => `<option ${c===cur?'selected':''}>${c}</option>`).join('');
+  return `<div class="rate-row">
+    <select style="width:72px;border-radius:8px;font-size:12px;padding:7px 4px;background:var(--sand);border:1.5px solid var(--sand);color:var(--ink);-webkit-appearance:none;">${opts}</select>
+    <input type="number" step="0.001" value="${rate}" style="flex:1;background:var(--cream);border:1.5px solid var(--sand);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--ink);outline:none;font-family:'DM Sans',sans-serif;width:auto;" placeholder="0.000">
+    <span>= 1 EUR</span>
+    <button class="rate-del" onclick="this.closest('.rate-row').remove()">×</button>
+  </div>`;
+}
+
+function addRateRow() {
+  const wrap = document.getElementById('rate-rows');
+  wrap.insertAdjacentHTML('beforeend', rateRowHtml('EUR', 1));
+}
+
+function setTripCover(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    tripCoverB64 = ev.target.result;
+    document.getElementById('tf-cover-preview').innerHTML =
+      `<div class="photo-thumb"><img src="${tripCoverB64}"><button class="rm-photo" onclick="tripCoverB64=null;this.closest('.photo-thumb').remove()">×</button></div>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function getRates() {
+  const rows = document.querySelectorAll('#rate-rows .rate-row');
+  return Array.from(rows).map(r => ({
+    cur:  r.querySelector('select').value,
+    rate: parseFloat(r.querySelector('input').value) || 1
+  }));
+}
+
+async function saveTrip() {
+  const name  = document.getElementById('tf-name').value.trim();
+  const dest  = document.getElementById('tf-dest').value.trim();
+  const start = document.getElementById('tf-start').value;
+  const end   = document.getElementById('tf-end').value;
+  const membersRaw = document.getElementById('tf-members').value;
+  const members = membersRaw.split(',').map(s=>s.trim()).filter(Boolean);
+
+  if (!dest) { showToast('Palun sisesta sihtkoht'); return; }
+
+  const id    = editingTripId || uid();
+  const rates = getRates();
+  await dbPut('trips', { id, name, dest, startDate:start, endDate:end, rates, members, cover:tripCoverB64 });
+  showToast('Reis salvestatud ✓');
+  await renderTrips();
+  goTo('s-trips');
+}
+
+async function deleteTrip() {
+  if (!confirm('Kustuta reis ja kõik selle päevad?')) return;
+  const days = await dbGetAll('days');
+  for (const d of days.filter(d => d.tripId === editingTripId)) await dbDelete('days', d.id);
+  await dbDelete('trips', editingTripId);
+  showToast('Reis kustutatud');
+  await renderTrips();
+  goTo('s-trips');
+}
+
+// ══════════════════════════════════════════
+//  SCREEN 4: DAY FORM
+// ══════════════════════════════════════════
+let dfPhotos = []; // array of {src, receipt?}
+let dfSights = [];
+let dfCosts  = {}; // {cat: [{desc,amount,currency,receipt}]}
+
+async function openNewDay() {
+  editingDayId = null;
+  dfPhotos = []; dfSights = []; dfCosts = {};
+  document.getElementById('df-id').value       = '';
+  document.getElementById('df-date').value     = '';
+  document.getElementById('df-weekday').value  = '';
+  document.getElementById('df-from').value     = '';
+  document.getElementById('df-to').value       = '';
+  document.getElementById('df-breakfast').value = '';
+  document.getElementById('df-plan').value     = '';
+  document.getElementById('df-acc-name').value  = '';
+  document.getElementById('df-acc-note').value  = '';
+  document.getElementById('df-acc-maps').value  = '';
+  document.getElementById('df-acc-web').value   = '';
+  document.getElementById('df-notes').value    = '';
+  document.getElementById('df-delete-wrap').style.display = 'none';
+  document.getElementById('day-form-title').textContent = 'Lisa päev';
+  renderDaySights();
+  renderDayCosts();
+  renderDayPhotos();
+  goTo('s-day-form');
+}
+
+async function openEditDay(id) {
+  editingDayId = id;
+  const d = await dbGet('days', id);
+  if (!d) return;
+  dfPhotos = (d.photos||[]).map(src => ({src}));
+  dfSights = d.sights ? JSON.parse(JSON.stringify(d.sights)) : [];
+  dfCosts  = d.costs  ? JSON.parse(JSON.stringify(d.costs))  : {};
+
+  document.getElementById('df-id').value        = d.id;
+  document.getElementById('df-date').value      = d.date || '';
+  document.getElementById('df-weekday').value   = d.date ? WEEKDAYS[new Date(d.date+'T12:00').getDay()] : '';
+  document.getElementById('df-from').value      = d.from || '';
+  document.getElementById('df-to').value        = d.to   || '';
+  document.getElementById('df-breakfast').value = d.breakfast || '';
+  document.getElementById('df-plan').value      = d.plan || '';
+  document.getElementById('df-notes').value     = d.notes || '';
+  const acc = d.accommodation || {};
+  document.getElementById('df-acc-name').value  = acc.name || '';
+  document.getElementById('df-acc-note').value  = acc.note || '';
+  document.getElementById('df-acc-maps').value  = acc.maps || '';
+  document.getElementById('df-acc-web').value   = acc.web  || '';
+  document.getElementById('df-delete-wrap').style.display = 'block';
+  document.getElementById('day-form-title').textContent = 'Muuda päeva';
+
+  renderDaySights();
+  renderDayCosts();
+  renderDayPhotos();
+  goTo('s-day-form');
+}
+
+function updateWeekday() {
+  const val = document.getElementById('df-date').value;
+  document.getElementById('df-weekday').value = val ? WEEKDAYS[new Date(val+'T12:00').getDay()] : '';
+}
+
+// ── SIGHTS in form ──
+function renderDaySights() {
+  const wrap = document.getElementById('df-sights-wrap');
+  wrap.innerHTML = dfSights.map((s,i) => `
+    <div class="rich-entry" style="margin-bottom:8px;">
+      <button class="remove-entry" onclick="removeSight(${i})">×</button>
+      <div class="ff"><label>Nimi</label><input type="text" value="${esc(s.name||'')}" oninput="dfSights[${i}].name=this.value" placeholder="Vaatamisväärsuse nimi"></div>
+      <div class="frow">
+        <div class="ff" style="flex:2;"><label>Kulu</label><div class="cig">
+          <input type="number" value="${s.cost||''}" oninput="dfSights[${i}].cost=parseFloat(this.value)||0" placeholder="0">
+          <select onchange="dfSights[${i}].currency=this.value">${CURRENCIES.map(c=>`<option ${c===(s.currency||'EUR')?'selected':''}>${c}</option>`).join('')}</select>
+        </div></div>
+      </div>
+      <div class="ff"><label>Google Maps</label><input type="url" value="${esc(s.maps||'')}" oninput="dfSights[${i}].maps=this.value" placeholder="https://maps.google.com/..."></div>
+      <div class="ff"><label>Veebileht</label><input type="url" value="${esc(s.web||'')}" oninput="dfSights[${i}].web=this.value" placeholder="https://..."></div>
+    </div>`).join('');
+}
+
+function addSightEntry() {
+  dfSights.push({name:'',cost:0,currency:'EUR',maps:'',web:''});
+  renderDaySights();
+}
+
+function removeSight(i) {
+  dfSights.splice(i,1);
+  renderDaySights();
+}
+
+// ── COSTS in form ──
+function renderDayCosts() {
+  const wrap = document.getElementById('df-costs-wrap');
+  wrap.innerHTML = COST_CATS.map(cat => {
+    const items = dfCosts[cat.key] || [];
+    const total = items.reduce((s,it) => s + (parseFloat(it.amount)||0), 0);
+    const itemsHtml = items.map((it,i) => `
+      <div class="cli">
+        <input type="text" placeholder="Kirjeldus" value="${esc(it.desc||'')}" oninput="dfCosts['${cat.key}'][${i}].desc=this.value">
+        <input type="number" placeholder="0" value="${it.amount||''}" oninput="dfCosts['${cat.key}'][${i}].amount=parseFloat(this.value)||0;updateCatTotal('${cat.key}')">
+        <select onchange="dfCosts['${cat.key}'][${i}].currency=this.value">${CURRENCIES.map(c=>`<option ${c===(it.currency||'EUR')?'selected':''}>${c}</option>`).join('')}</select>
+        <label class="rcpt-btn" title="Lisa kviitungi foto">📷<input type="file" accept="image/*" style="display:none" onchange="setReceipt(event,'${cat.key}',${i})"></label>
+        <button class="rm-line" onclick="removeCostLine('${cat.key}',${i})">×</button>
+      </div>`).join('');
+    const totStr = total > 0 ? `${total.toFixed(0)} (orig.)` : '—';
+    return `<div class="fcc" id="fcc-${cat.key}" style="margin-bottom:8px;">
+      <div class="fcc-hdr" onclick="toggleFcc(this)">
+        <span class="fcc-label">${cat.label}</span>
+        <div class="fcc-right"><span class="fcc-total" id="fcc-tot-${cat.key}">${totStr}</span><span class="fcc-arr">▼</span></div>
+      </div>
+      <div class="fcc-body">
+        <div id="fcc-items-${cat.key}">${itemsHtml}</div>
+        <button class="add-line" onclick="addCostLine('${cat.key}')">＋ Lisa rida</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleFcc(hdr) {
+  const body = hdr.nextElementSibling;
+  const open = body.classList.toggle('open');
+  hdr.classList.toggle('open', open);
+}
+
+function addCostLine(cat) {
+  if (!dfCosts[cat]) dfCosts[cat] = [];
+  dfCosts[cat].push({desc:'', amount:0, currency:'EUR', receipt:null});
+  renderDayCosts();
+  // re-open that cat
+  setTimeout(() => {
+    const hdr = document.querySelector(`#fcc-${cat} .fcc-hdr`);
+    if (hdr && !hdr.classList.contains('open')) toggleFcc(hdr);
+  }, 50);
+}
+
+function removeCostLine(cat, i) {
+  dfCosts[cat].splice(i,1);
+  renderDayCosts();
+}
+
+function updateCatTotal(cat) {
+  const items = dfCosts[cat] || [];
+  const total = items.reduce((s,it) => s + (parseFloat(it.amount)||0), 0);
+  const el = document.getElementById(`fcc-tot-${cat}`);
+  if (el) el.textContent = total > 0 ? `${total.toFixed(0)} (orig.)` : '—';
+}
+
+function setReceipt(e, cat, i) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    if (!dfCosts[cat]) dfCosts[cat] = [];
+    if (dfCosts[cat][i]) dfCosts[cat][i].receipt = ev.target.result;
+    showToast('Kviitung lisatud 🧾');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── PHOTOS in form ──
+function renderDayPhotos() {
+  const wrap = document.getElementById('df-photos-preview');
+  wrap.innerHTML = dfPhotos.map((p,i) =>
+    `<div class="photo-thumb"><img src="${p.src}"><button class="rm-photo" onclick="dfPhotos.splice(${i},1);renderDayPhotos()">×</button></div>`
+  ).join('');
+}
+
+function addDayPhotos(e) {
+  const files = Array.from(e.target.files);
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      dfPhotos.push({src: ev.target.result});
+      loaded++;
+      if (loaded === files.length) renderDayPhotos();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+// ── SAVE DAY ──
+async function saveDay() {
+  const date = document.getElementById('df-date').value;
+  if (!date) { showToast('Palun vali kuupäev'); return; }
+
+  const id = editingDayId || uid();
+  const obj = {
+    id,
+    tripId:    currentTripId,
+    date,
+    from:      document.getElementById('df-from').value.trim(),
+    to:        document.getElementById('df-to').value.trim(),
+    breakfast: document.getElementById('df-breakfast').value.trim(),
+    plan:      document.getElementById('df-plan').value.trim(),
+    notes:     document.getElementById('df-notes').value.trim(),
+    accommodation: {
+      name: document.getElementById('df-acc-name').value.trim(),
+      note: document.getElementById('df-acc-note').value.trim(),
+      maps: document.getElementById('df-acc-maps').value.trim(),
+      web:  document.getElementById('df-acc-web').value.trim(),
+    },
+    sights: JSON.parse(JSON.stringify(dfSights)),
+    costs:  JSON.parse(JSON.stringify(dfCosts)),
+    photos: dfPhotos.map(p => p.src),
+  };
+
+  await dbPut('days', obj);
+  showToast('Päev salvestatud ✓');
+  await renderDays();
+  goTo('s-days');
+}
+
+async function deleteDay() {
+  if (!confirm('Kustuta see päev?')) return;
+  await dbDelete('days', editingDayId);
+  showToast('Päev kustutatud');
+  await renderDays();
+  goTo('s-days');
+}
+
+// ══════════════════════════════════════════
+//  EXPORT / IMPORT
+// ══════════════════════════════════════════
+async function exportData() {
+  const trips = await dbGetAll('trips');
+  const days  = await dbGetAll('days');
+  const blob = new Blob([JSON.stringify({trips, days}, null, 2)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `reisipaevik-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Andmed eksporditud ✓');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!confirm('Taasta varukoopia? Olemasolevad andmed asendatakse.')) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      for (const t of (data.trips||[])) await dbPut('trips', t);
+      for (const d of (data.days||[]))  await dbPut('days',  d);
+      showToast('Andmed taastatud ✓');
+      await renderTrips();
+    } catch(err) {
+      showToast('Viga faili lugemisel');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+
+// ══════════════════════════════════════════
+//  PIN SYSTEM
+// ══════════════════════════════════════════
+const PIN_KEY = 'rp_pin_hash';
+let pinBuffer = [];
+let pinMode   = 'enter'; // 'setup' | 'enter' | 'change_old' | 'change_new' | 'change_confirm'
+let pinNewTemp = '';
+
+function hashPin(p) {
+  // Simple hash — good enough for local PIN protection
+  let h = 0;
+  for (let i = 0; i < p.length; i++) h = (Math.imul(31, h) + p.charCodeAt(i)) | 0;
+  return h.toString(36) + p.length;
+}
+
+function getStoredPin() { return localStorage.getItem(PIN_KEY); }
+function storePin(p)    { localStorage.setItem(PIN_KEY, hashPin(p)); }
+function pinIsSet()     { return !!getStoredPin(); }
+
+function openSettingsWithPin() {
+  pinBuffer = [];
+  if (!pinIsSet()) {
+    // First time: set up PIN
+    pinMode = 'setup';
+    document.getElementById('pin-screen-title').textContent = 'Seead';
+    document.getElementById('pin-instruction').textContent  = 'Loo seadete PIN-kood';
+    document.getElementById('pin-sub').textContent          = 'Vali 4-kohaline kood seadete kaitsmiseks';
+  } else {
+    pinMode = 'enter';
+    document.getElementById('pin-screen-title').textContent = 'Seaded';
+    document.getElementById('pin-instruction').textContent  = 'Sisesta PIN-kood';
+    document.getElementById('pin-sub').textContent          = 'Seadete avamiseks';
+  }
+  document.getElementById('pin-error').textContent = '';
+  updatePinDots();
+  goTo('s-pin');
+}
+
+function openChangePin() {
+  pinBuffer = [];
+  pinMode   = 'change_old';
+  document.getElementById('pin-screen-title').textContent = 'Muuda PIN';
+  document.getElementById('pin-instruction').textContent  = 'Sisesta praegune PIN';
+  document.getElementById('pin-sub').textContent          = '';
+  document.getElementById('pin-error').textContent        = '';
+  updatePinDots();
+  goTo('s-pin');
+}
+
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer.push(digit);
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(handlePinComplete, 120);
+}
+
+function pinDelete() {
+  pinBuffer.pop();
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function pinClear() {
+  pinBuffer = [];
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pd' + i);
+    dot.classList.toggle('filled', i < pinBuffer.length);
+    dot.classList.remove('error');
+  }
+}
+
+function pinShakeError(msg) {
+  for (let i = 0; i < 4; i++) document.getElementById('pd' + i).classList.add('error');
+  document.getElementById('pin-error').textContent = msg;
+  setTimeout(() => { pinBuffer = []; updatePinDots(); }, 700);
+}
+
+function handlePinComplete() {
+  const entered = pinBuffer.join('');
+
+  if (pinMode === 'setup') {
+    storePin(entered);
+    pinBuffer = [];
+    showToast('PIN-kood seadistatud 🔒');
+    loadSettingsScreen();
+    goTo('s-settings');
+    return;
+  }
+
+  if (pinMode === 'enter') {
+    if (hashPin(entered) === getStoredPin()) {
+      pinBuffer = [];
+      loadSettingsScreen();
+      goTo('s-settings');
+    } else {
+      pinShakeError('Vale PIN-kood');
+    }
+    return;
+  }
+
+  if (pinMode === 'change_old') {
+    if (hashPin(entered) === getStoredPin()) {
+      pinBuffer = [];
+      pinMode   = 'change_new';
+      document.getElementById('pin-instruction').textContent = 'Sisesta uus PIN';
+      document.getElementById('pin-sub').textContent = '4-kohaline';
+      document.getElementById('pin-error').textContent = '';
+      updatePinDots();
+    } else {
+      pinShakeError('Vale PIN-kood');
+    }
+    return;
+  }
+
+  if (pinMode === 'change_new') {
+    pinNewTemp = entered;
+    pinBuffer  = [];
+    pinMode    = 'change_confirm';
+    document.getElementById('pin-instruction').textContent = 'Korda uut PIN-i';
+    document.getElementById('pin-sub').textContent = 'Sisesta sama kood uuesti';
+    document.getElementById('pin-error').textContent = '';
+    updatePinDots();
+    return;
+  }
+
+  if (pinMode === 'change_confirm') {
+    if (entered === pinNewTemp) {
+      storePin(entered);
+      pinBuffer = [];
+      showToast('PIN-kood muudetud ✓');
+      goTo('s-settings');
+    } else {
+      pinShakeError('Koodid ei kattu');
+      pinNewTemp = '';
+      setTimeout(() => {
+        pinMode = 'change_new';
+        document.getElementById('pin-instruction').textContent = 'Sisesta uus PIN';
+        document.getElementById('pin-sub').textContent = '4-kohaline';
+        document.getElementById('pin-error').textContent = '';
+        updatePinDots();
+      }, 800);
+    }
+    return;
+  }
+}
+
+// ══════════════════════════════════════════
+//  SETTINGS SCREEN LOAD
+// ══════════════════════════════════════════
+function loadSettingsScreen() {
+  const clientId = localStorage.getItem('rp_client_id') || '';
+  document.getElementById('cfg-client-id').value = clientId;
+  document.getElementById('drive-section').style.display = clientId ? 'block' : 'none';
+}
+
+function saveClientId() {
+  const val = document.getElementById('cfg-client-id').value.trim();
+  localStorage.setItem('rp_client_id', val);
+  document.getElementById('drive-section').style.display = val ? 'block' : 'none';
+  showToast(val ? 'Client ID salvestatud ✓' : 'Client ID eemaldatud');
+  updateDriveStatusBtn();
+}
+
+function updateDriveStatusBtn() {
+  const clientId = localStorage.getItem('rp_client_id') || '';
+  document.getElementById('drive-status-btn').style.display = clientId ? 'block' : 'none';
+}
+
+// ══════════════════════════════════════════
+//  GOOGLE DRIVE (stub — activates when Client ID set)
+// ══════════════════════════════════════════
+let driveAccessToken = null;
+let driveFileId      = null;
+
+function driveSignIn() {
+  const clientId = localStorage.getItem('rp_client_id');
+  if (!clientId) { showToast('Lisa esmalt Client ID'); return; }
+  const params = new URLSearchParams({
+    client_id:     clientId,
+    redirect_uri:  'urn:ietf:wg:oauth:2.0:oob',
+    response_type: 'token',
+    scope:         'https://www.googleapis.com/auth/drive.file',
+    prompt:        'consent',
+  });
+  // Open Google sign-in in popup
+  const w = window.open(
+    'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString(),
+    'google-auth', 'width=500,height=620'
+  );
+  // Poll for token in URL
+  const poll = setInterval(() => {
+    try {
+      const hash = w.location.hash;
+      if (hash && hash.includes('access_token')) {
+        clearInterval(poll);
+        w.close();
+        const p = new URLSearchParams(hash.slice(1));
+        driveAccessToken = p.get('access_token');
+        showToast('Google\'iga sisse logitud ✓');
+        // Show email
+        fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
+          headers: {Authorization: 'Bearer ' + driveAccessToken}
+        }).then(r => r.json()).then(u => {
+          document.getElementById('drive-email').textContent = u.email || '';
+          document.getElementById('drive-user-info').style.display = 'block';
+        });
+      }
+    } catch(e) { /* cross-origin, keep polling */ }
+    if (w.closed) clearInterval(poll);
+  }, 500);
+}
+
+async function driveSave() {
+  if (!driveAccessToken) { showToast('Logi esmalt Google\'iga sisse'); return; }
+  showToast('Salvestamine...');
+  try {
+    const trips = await dbGetAll('trips');
+    const days  = await dbGetAll('days');
+    const blob  = new Blob([JSON.stringify({trips, days})], {type:'application/json'});
+    if (driveFileId) {
+      // Update existing
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+        method: 'PATCH', headers: {Authorization: 'Bearer ' + driveAccessToken, 'Content-Type': 'application/json'}, body: blob
+      });
+    } else {
+      // Find or create
+      const search = await fetch(
+        "https://www.googleapis.com/drive/v3/files?q=name='reisipaevik.json'&spaces=drive&fields=files(id,name)",
+        {headers: {Authorization: 'Bearer ' + driveAccessToken}}
+      ).then(r => r.json());
+      if (search.files && search.files.length > 0) {
+        driveFileId = search.files[0].id;
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+          method: 'PATCH', headers: {Authorization: 'Bearer ' + driveAccessToken, 'Content-Type': 'application/json'}, body: blob
+        });
+      } else {
+        const meta = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: {Authorization: 'Bearer ' + driveAccessToken, 'Content-Type': 'multipart/related; boundary=bound'},
+          body: '--bound\r\nContent-Type: application/json\r\n\r\n' +
+                JSON.stringify({name:'reisipaevik.json',mimeType:'application/json'}) +
+                '\r\n--bound\r\nContent-Type: application/json\r\n\r\n' +
+                JSON.stringify({trips,days}) + '\r\n--bound--'
+        }).then(r => r.json());
+        driveFileId = meta.id;
+      }
+    }
+    showToast('Drive\'i salvestatud ✓ ☁️');
+  } catch(e) { showToast('Viga salvestamisel: ' + e.message); }
+}
+
+async function driveLoad() {
+  if (!driveAccessToken) { showToast('Logi esmalt Google\'iga sisse'); return; }
+  if (!confirm('Lae Drive\'ist? Kohalikud andmed asendatakse.')) return;
+  showToast('Laadimine...');
+  try {
+    const search = await fetch(
+      "https://www.googleapis.com/drive/v3/files?q=name='reisipaevik.json'&spaces=drive&fields=files(id,name)",
+      {headers: {Authorization: 'Bearer ' + driveAccessToken}}
+    ).then(r => r.json());
+    if (!search.files || !search.files.length) { showToast('Drive\'is faili ei leitud'); return; }
+    driveFileId = search.files[0].id;
+    const data = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,
+      {headers: {Authorization: 'Bearer ' + driveAccessToken}}
+    ).then(r => r.json());
+    for (const t of (data.trips||[])) await dbPut('trips', t);
+    for (const d of (data.days||[]))  await dbPut('days',  d);
+    showToast('Drive\'ist laaditud ✓');
+    await renderTrips();
+    goTo('s-trips');
+  } catch(e) { showToast('Viga laadimisel: ' + e.message); }
+}
+
+function driveSignOut() {
+  driveAccessToken = null;
+  driveFileId      = null;
+  document.getElementById('drive-user-info').style.display = 'none';
+  document.getElementById('drive-email').textContent = '';
+  showToast('Logitud välja');
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function toEur(amount, currency, rates) {
+  if (!amount) return 0;
+  if (currency === 'EUR') return parseFloat(amount);
+  const r = (rates||[]).find(r => r.cur === currency);
+  return r ? parseFloat(amount) * r.rate : parseFloat(amount);
+}
+
+function dayTotalEur(d, rates) {
+  let total = 0;
+  const costs = d.costs || {};
+  for (const cat of COST_CATS) {
+    const items = costs[cat.key] || [];
+    for (const it of items) total += toEur(it.amount||0, it.currency||'EUR', rates);
+  }
+  return total;
+}
+
+function fmtEur(n) {
+  if (!n) return '0 €';
+  return Math.round(n).toLocaleString('et-EE') + ' €';
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  const [y,m,d] = s.split('-');
+  const months = ['jaanuar','veebruar','märts','aprill','mai','juuni','juuli','august','september','oktoober','november','detsember'];
+  return `${parseInt(d)}. ${months[parseInt(m)-1]} ${y}`;
+}
+
+function fmtDateShort(s) {
+  if (!s) return '';
+  const [y,m,d] = s.split('-');
+  const months = ['jaan','veebr','märts','apr','mai','juuni','juuli','aug','sept','okt','nov','dets'];
+  return `${parseInt(d)}. ${months[parseInt(m)-1]}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+
+// ══════════════════════════════════════════
+//  SEARCH
+// ══════════════════════════════════════════
+let activeFilter = 'all';
+
+function setFilter(btn, filter) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(function(c) { c.classList.remove('active'); });
+  btn.classList.add('active');
+  doSearch();
+}
+
+function showSearch(on) {
+  var filtersEl = document.getElementById('search-filters');
+  filtersEl.style.display = on ? 'flex' : 'none';
+  var q = document.getElementById('search-input').value.trim();
+  if (on && q.length > 0) showSearchResults(true);
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  showSearchResults(false);
+  document.getElementById('search-filters').style.display = 'none';
+}
+
+function showSearchResults(on) {
+  document.getElementById('search-results-wrap').style.display = on ? 'flex' : 'none';
+  document.getElementById('trips-scroll').style.display = on ? 'none' : 'flex';
+  document.getElementById('search-results-wrap').style.flexDirection = 'column';
+}
+
+async function doSearch() {
+  var q = document.getElementById('search-input').value.trim().toLowerCase();
+  var clearBtn = document.getElementById('search-clear');
+  clearBtn.style.display = q.length > 0 ? 'block' : 'none';
+
+  if (q.length < 1) { showSearchResults(false); return; }
+  showSearchResults(true);
+
+  var trips = await dbGetAll('trips');
+  var days  = await dbGetAll('days');
+  var results = [];
+
+  days.forEach(function(d) {
+    var trip = trips.find(function(t) { return t.id === d.tripId; }) || {};
+    var tripLabel = (trip.dest || '') + (trip.name ? ' · ' + trip.name : '');
+    var dateLabel = d.date ? fmtDateShort(d.date) : '';
+
+    // LOCATION filter
+    if (activeFilter === 'all' || activeFilter === 'location') {
+      if (d.from && d.from.toLowerCase().indexOf(q) > -1)
+        results.push({type:'location', icon:'📍', main: d.from, sub: 'Alguspunkt · ' + dateLabel, trip: tripLabel, dayId: d.id, tripId: d.tripId});
+      if (d.to && d.to.toLowerCase().indexOf(q) > -1)
+        results.push({type:'location', icon:'📍', main: d.to, sub: 'Lõpp-punkt · ' + dateLabel, trip: tripLabel, dayId: d.id, tripId: d.tripId});
+    }
+
+    // ACCOMMODATION filter
+    if (activeFilter === 'all' || activeFilter === 'acc') {
+      var acc = d.accommodation || {};
+      if (acc.name && acc.name.toLowerCase().indexOf(q) > -1)
+        results.push({type:'acc', icon:'🏨', main: acc.name, sub: 'Majutus · ' + dateLabel, trip: tripLabel, note: acc.note, maps: acc.maps, web: acc.web, dayId: d.id, tripId: d.tripId});
+    }
+
+    // SIGHTS filter
+    if (activeFilter === 'all' || activeFilter === 'sight') {
+      (d.sights || []).forEach(function(s) {
+        if (s.name && s.name.toLowerCase().indexOf(q) > -1)
+          results.push({type:'sight', icon:'🏛', main: s.name, sub: 'Vaatamisväärsus · ' + dateLabel + (s.cost ? ' · ' + s.cost + ' ' + (s.currency||'EUR') : ''), trip: tripLabel, maps: s.maps, web: s.web, dayId: d.id, tripId: d.tripId});
+      });
+    }
+
+    // COSTS filter
+    if (activeFilter === 'all' || activeFilter === 'cost') {
+      var costs = d.costs || {};
+      Object.keys(costs).forEach(function(cat) {
+        (costs[cat] || []).forEach(function(it) {
+          if (it.desc && it.desc.toLowerCase().indexOf(q) > -1) {
+            var catLabel = COST_CATS.find(function(c) { return c.key === cat; });
+            results.push({type:'cost', icon:'💶', main: it.desc, sub: (catLabel ? catLabel.label : cat) + ' · ' + dateLabel + (it.amount ? ' · ' + it.amount + ' ' + (it.currency||'EUR') : ''), trip: tripLabel, dayId: d.id, tripId: d.tripId});
+          }
+        });
+      });
+    }
+  });
+
+  var el = document.getElementById('search-results');
+  if (!results.length) {
+    el.innerHTML = '<div class="empty" style="padding:40px 20px;"><div class="ei">🔍</div><p>Tulemusi ei leitud.</p></div>';
+    return;
+  }
+
+  el.innerHTML = results.map(function(r) {
+    var links = '';
+    if (r.maps) links += '<a class="rl" href="' + r.maps + '" target="_blank" onclick="event.stopPropagation()">🗺 Maps</a>';
+    if (r.web)  links += '<a class="rl" href="' + r.web  + '" target="_blank" onclick="event.stopPropagation()">🔗 Veeb</a>';
+    return '<div class="search-result-card" data-tid="' + r.tripId + '" data-did="' + r.dayId + '" data-action="open-day">'
+      + '<div class="src-type">' + r.icon + ' ' + (r.type==='location'?'Asukoht':r.type==='acc'?'Majutus':r.type==='sight'?'Vaatamisväärsus':'Kulu') + '</div>'
+      + '<div class="src-main">' + esc(r.main) + '</div>'
+      + '<div class="src-sub">' + esc(r.sub) + '</div>'
+      + (r.note ? '<div class="src-sub" style="font-style:italic;">' + esc(r.note) + '</div>' : '')
+      + (links ? '<div class="rich-links" style="margin-top:4px;">' + links + '</div>' : '')
+      + '<div class="src-trip">✈️ ' + esc(r.trip) + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// Click handler for search results
+document.getElementById('search-results').addEventListener('click', function(e) {
+  var el = e.target;
+  while (el && el !== this) {
+    if (el.dataset && el.dataset.action === 'open-day') {
+      var tid = el.dataset.tid;
+      var did = el.dataset.did;
+      currentTripId = tid;
+      clearSearch();
+      renderDays().then(function() {
+        goTo('s-days');
+        // Scroll to the day card after render
+        setTimeout(function() {
+          var card = document.getElementById('dc-' + did);
+          if (card) card.scrollIntoView({behavior:'smooth', block:'start'});
+        }, 300);
+      });
+      return;
+    }
+    el = el.parentElement;
+  }
+});
+
+// Hide search filters when tapping outside
+document.getElementById('app').addEventListener('click', function(e) {
+  var searchArea = document.querySelector('.topbar');
+  if (!searchArea.contains(e.target) && !document.getElementById('search-results-wrap').contains(e.target)) {
+    var q = document.getElementById('search-input').value.trim();
+    if (!q) {
+      document.getElementById('search-filters').style.display = 'none';
+    }
+  }
+});
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+// Event delegation for trip list
+document.getElementById('trip-list').addEventListener('click', function(e) {
+  var el = e.target;
+  // Check if edit button was clicked
+  while (el && el !== this) {
+    if (el.dataset && el.dataset.action === 'edit' && el.dataset.tid) {
+      e.stopPropagation();
+      openEditTrip(el.dataset.tid);
+      return;
+    }
+    if (el.classList && el.classList.contains('trip-card') && el.dataset.tid) {
+      openTrip(el.dataset.tid);
+      return;
+    }
+    el = el.parentElement;
+  }
+});
+
+openDB().then(async () => {
+  try {
+    await renderTrips();
+    updateDriveStatusBtn();
+    goTo('s-trips');
+  } catch(err) {
+    console.error('Init error:', err);
+    showToast('Viga: ' + err.message);
+    goTo('s-trips');
+  }
+}).catch(err => {
+  document.getElementById('app').innerHTML = '<div style="padding:40px;text-align:center;color:#c00;font-family:sans-serif;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div>Andmebaasi viga</div><div style="margin-top:20px;font-size:13px;">Proovi Safari privaatset akent sulgeda ja uuesti avada.</div></div>';
+});
+</script>
+</body>
+</html>
